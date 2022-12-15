@@ -1,54 +1,50 @@
-#include<ESP8266WiFi.h>
+#define BLYNK_TEMPLATE_ID "TMPLquOE6HUy"
+#define BLYNK_DEVICE_NAME "Gas Leakage"
+#define BLYNK_AUTH_TOKEN "qcLkDjZPwmLhA-fceZTO7LK3PgDz0BKv"
 
-// Info de connexion 
-#define SSID "iPhone"  // wifi_name
-#define PASSWORD "sabrine1999" // wifi_password
-
-#define Red D1
-#define Green D2
+#define BLYNK_PRINT Serial
 #define Buzzer D3
-#define Sensor A0
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
 
+ 
+char auth[] = BLYNK_AUTH_TOKEN;
+
+char ssid[] = "iPhone";  
+char pass[] = "sabrine1999";  
+int smokeA0 = A0;
+int data = 0;
+int sensorThres = 100;
+
+
+BlynkTimer timer;
+
+void sendSensor(){
+ 
+ int data = analogRead(smokeA0);
+ Blynk.virtualWrite(V0, data);
+  Serial.print("Pin A0: ");
+  Serial.println(data);
+
+
+  if(data > 20){
+    Blynk.email("sabrineabdeljaoued27@gmail.com", "Alert", "Gas Leakage Detected!");
+    Blynk.logEvent("gas_alert","Gas Leakage Detected");
+    digitalWrite(Buzzer,HIGH);
+  }else{
+    digitalWrite(Buzzer,LOW);
+  }
+}
 
 void setup(){
-  Serial.begin(9600);
-  
-  // Mode de connexion
-  WiFi.mode(WIFI_STA);
-  
-  // Démarrage de la connexion
-  WiFi.begin(SSID,PASSWORD);
-
-  pinMode(Red,OUTPUT);
-  pinMode(Green,OUTPUT);
+  pinMode(smokeA0, INPUT);
   pinMode(Buzzer,OUTPUT);
-  pinMode(Sensor,INPUT);
-}
-
-void notification(){
-  int sensor = analogRead(Sensor);
- // Serial.println(sensor);
-  if(sensor > 500){
-    digitalWrite(Green,LOW);
-    digitalWrite(Red,HIGH);
-    digitalWrite(Buzzer,HIGH);
-    Serial.println("Alerte : il y'a une fuite");
-  }else{
-    digitalWrite(Red,LOW);
-    digitalWrite(Green,HIGH);
-    digitalWrite(Buzzer,LOW);
-    Serial.println("il n y'a pas de fuite");
-}
+  Serial.begin(115200);
+  Blynk.begin(auth, ssid, pass);
+  timer.setInterval(2500L, sendSensor);
 }
 
 void loop(){
-  // Tester la connexion
-  if (WiFi.isConnected()){
-    Serial.println("Connecté");
-  }else{
-    Serial.println("Déconnecté");
-  }
-
-  notification();
-  
+  Blynk.run();
+  timer.run();
 }
